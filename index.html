@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestão de frota — revisões e vencimentos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16222f; --ink-2:#51606f; --paper:#edf0f3; --surface:#ffffff; --line:#d5dce3; --line-2:#e7ecf0;
+  --brand:#1b3a5c; --brand-ink:#ffffff; --accent:#0a6ebd; --accent-bg:#e4f0fb;
+  --ok:#1b8548; --ok-bg:#dff2e6; --warn:#8a5a00; --warn-bg:#fcecbd; --warn-bar:#e0a200;
+  --crit:#bb2427; --crit-bg:#fadcdc; --off:#56636f; --off-bg:#e3e8ec; --none:#235fa8; --none-bg:#dde9f7;
+  --r-sm:5px; --r-md:8px; --r-lg:12px;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --head:"Barlow Semi Condensed","Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ink:#e6ecf2; --ink-2:#9fb0c0; --paper:#0f1721; --surface:#17212c; --line:#2b3948; --line-2:#222e3b;
+    --brand:#0d2238; --accent:#5aaaf0; --accent-bg:#183049;
+    --ok:#52c985; --ok-bg:#16301f; --warn:#f0c14b; --warn-bg:#3a2e0c; --warn-bar:#e0a200;
+    --crit:#ff7b7d; --crit-bg:#3d1b1c; --off:#a3b0bc; --off-bg:#26313c; --none:#7db4ee; --none-bg:#172a42;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.45 var(--body)}
+h1,h2,h3{font-family:var(--head);margin:0;font-weight:600;letter-spacing:.005em}
+h2{font-size:21px}
+button,input,select{font:inherit;color:inherit}
+.muted{color:var(--ink-2)}
+.skip{position:absolute;left:-999px;top:0;background:#fff;color:#000;padding:8px 12px;z-index:100}
+.skip:focus{left:8px;top:8px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{background:var(--brand);color:var(--brand-ink)}
+.top-in{max-width:1320px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{flex:none}
+.brand h1{font-size:26px;line-height:1.1;font-weight:700}
+.brand p{margin:2px 0 0;font-size:14px;opacity:.78}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;padding:6px 14px;cursor:pointer}
+.chip:hover{background:rgba(255,255,255,.16)}
+.dot{width:9px;height:9px;border-radius:50%;background:#9aa7b4}
+.dot.on{background:#4fd18b}.dot.local{background:#f0b429}
+
+/* tabs */
+.tabs{background:var(--surface);border-bottom:1px solid var(--line)}
+.tabs-in{max-width:1320px;margin:0 auto;padding:0 12px;display:flex;gap:2px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:13px 14px 10px;cursor:pointer;color:var(--ink-2);font-weight:500;white-space:nowrap}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+
+main{max-width:1320px;margin:0 auto;padding:20px}
+.tab{display:none}.tab.active{display:block}
+.toolbar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+.toolbar label{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--ink-2);font-weight:500}
+.toolbar .grow{flex:1}
+select,input[type=text],input[type=number],input[type=date],input[type=url],input[type=password],input[type=search]{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px;min-height:38px;color:var(--ink);min-width:0}
+select{padding-right:6px}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 14px;min-height:38px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--crit)}
+.btn.sm{min-height:30px;padding:3px 10px;font-size:14px}
+.btn.ghost{border-color:transparent;background:none;color:var(--accent)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:18px;overflow:hidden}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line-2)}
+.panel-body{padding:16px 18px}
+.notice{border-radius:var(--r-md);padding:12px 16px;margin-bottom:16px;border:1px solid;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.notice.info{background:var(--accent-bg);border-color:var(--accent);}
+.notice.warn{background:var(--warn-bg);border-color:var(--warn-bar);color:var(--ink)}
+.notice.ok{background:var(--ok-bg);border-color:var(--ok)}
+.empty{padding:34px 18px;text-align:center;color:var(--ink-2)}
+.empty strong{display:block;color:var(--ink);font-family:var(--head);font-size:19px;margin-bottom:4px}
+
+/* fleet bar */
+.fleet{padding:18px}
+.fleet-sum{margin:0 0 12px;font-size:16px}
+.bar{display:flex;height:22px;border-radius:5px;overflow:hidden;background:var(--line-2);gap:2px}
+.bar i{display:block;min-width:3px}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+.lg{border:1px solid var(--line);border-left-width:6px;border-radius:var(--r-md);padding:8px 12px;background:var(--surface);text-align:left;cursor:pointer}
+.lg:hover{border-color:var(--ink-2)}
+.lg b{display:block;font:700 30px/1.05 var(--head);font-variant-numeric:tabular-nums}
+.lg span{font-size:13.5px;color:var(--ink-2)}
+.c-ok{--c:var(--ok)}.c-warn{--c:var(--warn-bar)}.c-crit{--c:var(--crit)}.c-none{--c:var(--none)}.c-off{--c:var(--off)}
+.lg{border-left-color:var(--c)}
+.bar i{background:var(--c)}
+
+/* tables */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line-2);white-space:nowrap;vertical-align:middle}
+th{font-weight:600;font-size:13.5px;color:var(--ink-2);background:var(--surface);position:sticky;top:0}
+th[data-k]{cursor:pointer;user-select:none}
+th[data-k]:hover{color:var(--ink)}
+th[aria-sort="ascending"]::after{content:" \25B2";font-size:10px}
+th[aria-sort="descending"]::after{content:" \25BC";font-size:10px}
+td.num,th.num{text-align:right}
+tr:hover td{background:color-mix(in srgb,var(--accent-bg) 45%,transparent)}
+td.wrap{white-space:normal;min-width:160px;max-width:320px;color:var(--ink-2);font-size:13.5px}
+.neg{color:var(--crit);font-weight:600}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:600;letter-spacing:.01em}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.crit{background:var(--crit-bg);color:var(--crit)}
+.badge.off{background:var(--off-bg);color:var(--off)}
+.badge.none{background:var(--none-bg);color:var(--none)}
+
+/* cycle ruler: shows how much of the current revision interval is consumed.
+   ticks at 90% (attention) and 100% (due) on a 0-150% scale */
+.ruler-cell{display:flex;align-items:center;gap:10px}
+.ruler{position:relative;width:112px;height:9px;background:var(--line-2);border-radius:5px;overflow:hidden;flex:none}
+.ruler i{position:absolute;left:0;top:0;bottom:0;background:var(--c)}
+.ruler::before,.ruler::after{content:"";position:absolute;top:0;bottom:0;width:2px;background:var(--surface);z-index:1}
+.ruler::before{left:60%}.ruler::after{left:66.667%}
+.ruler-cell span{min-width:42px;text-align:right}
+
+/* dialog */
+dialog{border:0;border-radius:var(--r-lg);padding:0;width:min(560px,calc(100% - 24px));background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(8,16,24,.35)}
+dialog::backdrop{background:rgba(10,20,30,.55)}
+.m-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line-2)}
+.m-head h3{font-size:22px}
+.m-x{background:none;border:0;font-size:26px;line-height:1;cursor:pointer;color:var(--ink-2);padding:2px 8px;border-radius:var(--r-sm)}
+.m-body{padding:18px 20px;display:grid;gap:14px}
+.m-foot{padding:14px 20px;border-top:1px solid var(--line-2);display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-weight:500;font-size:14px}
+.field small{color:var(--ink-2)}
+.field input,.field select{width:100%}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:0;font-size:14.5px}
+.facts dt{color:var(--ink-2)}.facts dd{margin:0;font-weight:500}
+.err{color:var(--crit);font-weight:500;margin:0;min-height:0}
+
+.toasts{position:fixed;right:16px;bottom:16px;display:grid;gap:8px;z-index:50;max-width:min(420px,calc(100% - 32px))}
+.toast{background:var(--ink);color:var(--paper);border-radius:var(--r-md);padding:11px 16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.toast.err{background:var(--crit);color:#fff}
+.loading{position:fixed;inset:0;background:rgba(237,240,243,.6);display:none;align-items:center;justify-content:center;z-index:60}
+.loading.on{display:flex}
+.spin{width:38px;height:38px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--accent)}
+@media (prefers-reduced-motion:no-preference){.spin{animation:rot .8s linear infinite}}
+@keyframes rot{to{transform:rotate(360deg)}}
+details{border:1px solid var(--line);border-radius:var(--r-md);padding:10px 14px;margin-top:12px}
+details summary{cursor:pointer;font-weight:600}
+details ol{margin:10px 0 2px;padding-left:20px;display:grid;gap:4px}
+code{background:var(--line-2);padding:1px 6px;border-radius:4px;font-size:.92em}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+@media (max-width:640px){main{padding:12px}.row2{grid-template-columns:1fr}th,td{padding:8px}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Ir para o conteúdo</a>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect x="4" y="6" width="32" height="24" rx="5" fill="#f0b429"/><rect x="8" y="10" width="10" height="9" rx="1.5" fill="#1b3a5c"/><rect x="21" y="10" width="11" height="9" rx="1.5" fill="#1b3a5c"/><rect x="4" y="22" width="32" height="3" fill="#1b3a5c" opacity=".35"/><circle cx="12" cy="31" r="4" fill="#fff" stroke="#1b3a5c" stroke-width="2"/><circle cx="28" cy="31" r="4" fill="#fff" stroke="#1b3a5c" stroke-width="2"/></svg>
+      <div><h1>Gestão de frota</h1><p>Revisões, vencimentos e desativações</p></div>
+    </div>
+    <button class="chip" id="conn-chip" data-act="goto" data-id="config" title="Abrir configuração da conexão"><span class="dot" id="conn-dot"></span><span id="conn-text">Carregando…</span></button>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Seções">
+  <div class="tabs-in" role="tablist">
+    <button role="tab" data-tab="dashboard">Painel</button>
+    <button role="tab" data-tab="ranking">Ranking</button>
+    <button role="tab" data-tab="criterios">Critérios</button>
+    <button role="tab" data-tab="veiculos">Veículos</button>
+    <button role="tab" data-tab="historico">Histórico</button>
+    <button role="tab" data-tab="config">Configuração e importação</button>
+  </div>
+</nav>
+
+<main id="main">
+
+  <!-- PAINEL -->
+  <section id="tab-dashboard" class="tab" role="tabpanel">
+    <div class="toolbar">
+      <label>Local <select class="sel-local"></select></label>
+      <button class="btn" data-act="refresh">Atualizar dados</button>
+    </div>
+    <div id="dash-notices"></div>
+    <div class="panel" id="dash-fleet"></div>
+    <div class="panel">
+      <div class="panel-head"><h2>Mais próximos do vencimento</h2><button class="btn ghost" data-act="goto" data-id="ranking">Ver ranking completo</button></div>
+      <div id="tbl-dash-top" class="tablewrap"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Situação por local</h2></div>
+      <div id="tbl-dash-local" class="tablewrap"></div>
+    </div>
+  </section>
+
+  <!-- RANKING -->
+  <section id="tab-ranking" class="tab" role="tabpanel">
+    <div class="toolbar">
+      <label>Local <select class="sel-local"></select></label>
+      <span id="rk-caption" class="muted"></span>
+    </div>
+    <div id="rk-notices"></div>
+    <div class="panel"><div id="tbl-ranking" class="tablewrap"></div></div>
+  </section>
+
+  <!-- CRITÉRIOS -->
+  <section id="tab-criterios" class="tab" role="tabpanel">
+    <div class="toolbar"><button class="btn primary" data-act="novo-criterio">Adicionar novo critério</button></div>
+    <div class="panel">
+      <div class="panel-head"><h2>Critérios cadastrados</h2></div>
+      <div id="tbl-criterios" class="tablewrap"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Tipos de chassi ainda sem critério</h2><span class="muted">Veículos desses tipos ficam fora do ranking.</span></div>
+      <div id="tbl-sem-criterio" class="tablewrap"></div>
+    </div>
+  </section>
+
+  <!-- VEÍCULOS -->
+  <section id="tab-veiculos" class="tab" role="tabpanel">
+    <div class="toolbar">
+      <label>Local <select class="sel-local"></select></label>
+      <label>Status <select id="f-status"></select></label>
+      <label>Tipo de chassi <select id="f-chassi"></select></label>
+      <label class="grow">Buscar por número de ordem ou chassi <input type="search" id="f-busca" placeholder="Ex.: 12170 ou LO-916"></label>
+      <button class="btn" data-act="export-veiculos">Exportar CSV</button>
+    </div>
+    <p class="muted" id="v-caption" style="margin:-4px 0 10px"></p>
+    <div class="panel"><div id="tbl-veiculos" class="tablewrap"></div></div>
+  </section>
+
+  <!-- HISTÓRICO -->
+  <section id="tab-historico" class="tab" role="tabpanel">
+    <div class="toolbar">
+      <label class="grow">Buscar por veículo, responsável ou nota fiscal <input type="search" id="h-busca"></label>
+      <button class="btn" data-act="export-historico">Exportar CSV</button>
+    </div>
+    <div class="panel"><div id="tbl-historico" class="tablewrap"></div></div>
+  </section>
+
+  <!-- CONFIG -->
+  <section id="tab-config" class="tab" role="tabpanel">
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-head"><h2>Conexão com o Google Sheets</h2></div>
+        <div class="panel-body" style="display:grid;gap:14px">
+          <p id="cfg-status" style="margin:0"></p>
+          <div class="field"><label for="cfg-url">URL do app da web (termina em /exec)</label>
+            <input type="url" id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off"></div>
+          <div class="field"><label for="cfg-token">Senha da API (opcional)</label>
+            <input type="password" id="cfg-token" autocomplete="off"><small>Precisa ser igual à propriedade API_TOKEN do Apps Script, se você criou uma.</small></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn primary" data-act="cfg-salvar">Salvar e conectar</button>
+            <button class="btn" data-act="cfg-local">Usar modo local</button>
+          </div>
+          <details><summary>Como criar a conexão</summary>
+            <ol>
+              <li>Crie uma planilha em branco no Google Sheets.</li>
+              <li>Extensões &gt; Apps Script: cole o conteúdo de <code>Code.gs</code> e salve.</li>
+              <li>Execute a função <code>setup</code> uma vez e autorize o acesso.</li>
+              <li>Implantar &gt; Nova implantação &gt; App da Web &gt; executar como <b>Eu</b>, acesso <b>Qualquer pessoa</b>.</li>
+              <li>Copie a URL <code>/exec</code>, cole acima e clique em Salvar e conectar.</li>
+            </ol>
+          </details>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Importar arquivos</h2></div>
+        <div class="panel-body" style="display:grid;gap:14px">
+          <p class="muted" style="margin:0">A importação soma ao que já existe: critérios, metas de revisão e histórico não são apagados. Você pode enviar só o abastecimento para atualizar o KM.</p>
+          <div class="field"><label for="imp-cad">Cadastro de veículos (.csv)</label>
+            <input type="file" id="imp-cad" accept=".csv,text/csv"><small>Colunas: Número Ordem; Tipo Chassi; Número Ano Chassi; Local</small></div>
+          <div class="field"><label for="imp-ab">Relatório de abastecimento (.csv)</label>
+            <input type="file" id="imp-ab" accept=".csv,text/csv"><small>Usa a maior leitura de hodômetro de cada veículo, ignorando saltos absurdos.</small></div>
+          <div><button class="btn primary" data-act="importar">Processar e salvar</button></div>
+          <div id="imp-result"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="local-panel" hidden>
+      <div class="panel-head"><h2>Dados deste navegador</h2></div>
+      <div class="panel-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <span class="muted">No modo local, tudo fica salvo apenas neste navegador.</span>
+        <button class="btn" data-act="local-backup">Baixar cópia (JSON)</button>
+        <button class="btn danger" data-act="local-limpar">Apagar dados locais</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="modal" aria-labelledby="m-title"></dialog>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div class="loading" id="loading" aria-hidden="true"><div class="spin"></div></div>
+
+<script>
+/* =====================================================================
+   CONFIGURAÇÃO
+   Se quiser que toda a equipe abra o site já conectado, cole aqui a URL
+   do Apps Script (a senha NÃO deve ser colocada aqui: o arquivo é público).
+   ===================================================================== */
+const CONFIG = { API_URL: '' };
+
+/* ---------------------------------------------------------------------
+   Utilidades
+   --------------------------------------------------------------------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nf = new Intl.NumberFormat('pt-BR');
+const fmtKm = v => v == null ? '—' : nf.format(Math.round(v));
+const fmtPct = v => v == null ? '—' : Math.round(v * 100) + '%';
+const fmtAnos = v => v == null ? '—' : v.toFixed(1).replace('.', ',') + ' anos';
+const fmtData = s => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : (s || '—'); };
+const pad2 = n => String(n).padStart(2, '0');
+const hojeISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; };
+const semAcento = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+/* ---------------------------------------------------------------------
+   1. Normalização de tipo de chassi (agrupamento por família)
+   "LO-916", "LO916" e "LO-916 EURO VI" => mesma chave "LO916".
+   --------------------------------------------------------------------- */
+const SUFIXOS_CHASSI = new Set(['EURO', 'VI', 'V', 'IV', 'III', 'II', 'I', 'EUROV', 'EUROVI']);
+
+function normalizeChassis(raw) {
+  if (!raw) return { key: '', label: '' };
+  const s = String(raw).toUpperCase().trim().replace(/\s+/g, ' ');
+  const tokens = s.split(' ');
+  while (tokens.length > 1 && SUFIXOS_CHASSI.has(tokens[tokens.length - 1])) tokens.pop();
+  const label = tokens.join(' ').trim() || s;
+  return { key: label.replace(/[^A-Z0-9]/g, ''), label };
+}
+
+/* ---------------------------------------------------------------------
+   2. Leitura dos CSVs
+   --------------------------------------------------------------------- */
+function decodeBuffer(buf) {
+  const u8 = new Uint8Array(buf);
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(u8).replace(/^\uFEFF/, ''); }
+  catch (e) { return new TextDecoder('windows-1252').decode(u8); }
+}
+
+function splitLine(line, d = ';') {
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { if (q && line[i + 1] === '"') { cur += '"'; i++; } else q = !q; }
+    else if (c === d && !q) { out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+
+function parseCadastro(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return [];
+  const d = lines[0].split(';').length >= lines[0].split(',').length ? ';' : ',';
+  const header = splitLine(lines[0], d).map(h => semAcento(h).toLowerCase().trim());
+  const col = (...nomes) => { for (const n of nomes) { const i = header.findIndex(h => h.includes(n)); if (i >= 0) return i; } return -1; };
+  let iOrd = col('numero ordem', 'prefixo', 'placa', 'id_veiculo', 'id veiculo');
+  let iCha = col('tipo chassi', 'tipo_chassi');
+  let iAno = col('ano chassi', 'ano_chassi', 'numero ano');
+  let iLoc = col('local', 'unidade');
+  if (iOrd < 0) iOrd = 0; if (iCha < 0) iCha = 1; if (iAno < 0) iAno = 2; if (iLoc < 0) iLoc = 3;
+
+  const mapa = new Map();
+  for (const ln of lines.slice(1)) {
+    const f = splitLine(ln, d);
+    const ordem = (f[iOrd] || '').trim().toUpperCase();
+    if (!ordem) continue;
+    const raw = (f[iCha] || '').trim();
+    const m = /(\d{4})/.exec(f[iAno] || '');
+    const { key, label } = normalizeChassis(raw);
+    mapa.set(ordem, {
+      numero_ordem: ordem, tipo_chassi_raw: raw, tipo_chassi_key: key, tipo_chassi_label: label,
+      ano_chassis: m ? parseInt(m[1], 10) : null, local: (f[iLoc] || '').trim()
+    });
+  }
+  return Array.from(mapa.values());
+}
+
+function parseBR(v) {
+  const s = String(v == null ? '' : v).trim().replace(/\./g, '').replace(',', '.');
+  if (!/^-?\d+(\.\d+)?$/.test(s)) return null;
+  return Number(s);
+}
+
+function dataBrParaISO(s) {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec((s || '').trim());
+  if (!m) return null;
+  let y = +m[3]; if (y < 100) y += 2000;
+  return `${y}-${pad2(m[2])}-${pad2(m[1])}`;
+}
+
+/* Maior KM plausível: filtro de Tukey (IQR, k=3) sobre as leituras do próprio
+   veículo. Remove saltos absurdos (ex.: 257.000 -> 2.155.451 numa leitura só). */
+function melhorKm(leituras) {
+  const pos = leituras.filter(l => l.km > 0);
+  if (!pos.length) return { km: null, data: null, descartadas: 0 };
+  const v = pos.map(l => l.km).sort((a, b) => a - b);
+  const n = v.length;
+  let teto;
+  if (n >= 4) {
+    const q1 = v[Math.floor(n / 4)], q3 = v[Math.floor(3 * n / 4)], iqr = q3 - q1;
+    teto = iqr > 0 ? q3 + 3 * iqr : q3 * 1.5 + 500;
+  } else {
+    const med = n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2;
+    teto = med * 1.5 + 500;
+  }
+  let validas = pos.filter(l => l.km <= teto);
+  if (!validas.length) validas = pos;
+  const best = validas.reduce((a, b) => (b.km > a.km ? b : a));
+  return { km: best.km, data: best.data, descartadas: pos.length - validas.length };
+}
+
+const RE_VEICULO = /Ve[íi]culo\s*:\s*([0-9A-Za-z/\-]+)\s+Tipo de Chassi:\s*(.*?)\s+Tipo de Motor:/i;
+
+/* O relatório de abastecimento é dividido em blocos por veículo. */
+function parseAbastecimento(text) {
+  const blocos = new Map();
+  let atual = null;
+  for (const linha of text.split(/\r?\n/)) {
+    const m = RE_VEICULO.exec(linha);
+    if (m) {
+      atual = m[1].trim().toUpperCase();
+      if (!blocos.has(atual)) blocos.set(atual, { chassi: m[2].trim(), leituras: [] });
+      continue;
+    }
+    const t = linha.replace(/^"/, '');
+    if (/^Total Ve[íi]culo/i.test(t)) { atual = null; continue; }
+    if (atual && linha.trim().startsWith('"')) {
+      const p = splitLine(linha).map(x => x.trim());
+      if (p.length >= 3) {
+        const km = parseBR(p[2]);
+        if (km != null && km > 0) blocos.get(atual).leituras.push({ data: dataBrParaISO(p[0]), km });
+      }
+    }
+  }
+  const map = new Map(); let descartadas = 0;
+  for (const [id, b] of blocos) {
+    const r = melhorKm(b.leituras);
+    descartadas += r.descartadas;
+    map.set(id, { id, chassi: b.chassi, km_atual: r.km, data_iso: r.data, n: b.leituras.length });
+  }
+  return { map, descartadas };
+}
+
+function semZeros(s) { return s.replace(/^0+/, '') || '0'; }
+function montarLookup(map) {
+  const lk = new Map();
+  for (const [id, l] of map) { const suf = id.split('/').pop().toUpperCase(); lk.set(suf, l); lk.set(semZeros(suf), l); }
+  return lk;
+}
+function acharKm(ordem, lk) { const o = String(ordem).toUpperCase(); return lk.get(o) || lk.get(semZeros(o)) || null; }
+
+/* ---------------------------------------------------------------------
+   3. Motor de regras
+   --------------------------------------------------------------------- */
+const ST = { OK: 'OK', ATENCAO: 'ATENÇÃO', CRITICO: 'CRÍTICO', SEM: 'SEM CRITÉRIO', TEMPO: 'DESATIVADO POR TEMPO', KM: 'DESATIVADO POR KM', MANUAL: 'DESATIVADO MANUALMENTE' };
+const ST_CLS = { [ST.OK]: 'ok', [ST.ATENCAO]: 'warn', [ST.CRITICO]: 'crit', [ST.SEM]: 'none', [ST.TEMPO]: 'off', [ST.KM]: 'off', [ST.MANUAL]: 'off' };
+const isOff = s => s === ST.TEMPO || s === ST.KM || s === ST.MANUAL;
+const LIMIAR_ATENCAO = 0.9;
+
+const idadeAnos = (ano, hoje = new Date()) => (hoje - new Date(ano, 0, 1)) / (365.25 * 86400000);
+
+/* Meta da primeira revisão pendente quando o veículo ainda não tem
+   "proxima_meta_km": maior múltiplo do plano já alcançado pelo KM atual. */
+function metaInicial(km, plano) {
+  if (km == null || km <= 0) return plano;
+  return Math.max(plano, Math.floor(km / plano) * plano);
+}
+
+/* Ciclo de revisões: confirmada a revisão da meta atual, a próxima é meta + plano
+   (30.000 -> 60.000 -> 90.000 ...). */
+const proximaMeta = (metaAtual, plano) => metaAtual + plano;
+
+/* Avalia um veículo contra o critério do seu tipo de chassi.
+   "Ciclo consumido" = quanto do intervalo atual (meta - plano ... meta) já foi rodado. */
+function avaliar(v, crit, hoje = new Date()) {
+  const o = { status: null, motivo: '', urg: null, pKm: null, pTempo: null, meta: null, kmRest: null, tempoRest: null, idade: v.ano_chassis ? idadeAnos(v.ano_chassis, hoje) : null };
+  if (crit) o.meta = v.proxima_meta_km || metaInicial(v.km_atual, crit.plano_km);
+  if (Number(v.desativado_manual)) { o.status = ST.MANUAL; o.motivo = 'Desativado manualmente por um operador.'; return o; }
+  if (!crit) { o.status = ST.SEM; o.motivo = 'Nenhum critério cadastrado para este tipo de chassi.'; return o; }
+
+  const tmax = crit.tempo_ativo_meses / 12;
+  if (o.idade != null && o.idade > tmax) {
+    o.status = ST.TEMPO; o.pTempo = o.idade / tmax; o.tempoRest = tmax - o.idade;
+    o.motivo = `Idade de ${fmtAnos(o.idade)}, acima do máximo de ${fmtAnos(tmax)} definido para este chassi.`;
+    return o;
+  }
+  if (crit.km_limite_desativacao && v.km_atual != null && v.km_atual > crit.km_limite_desativacao) {
+    o.status = ST.KM; o.motivo = `KM atual (${fmtKm(v.km_atual)}) acima do limite de desativação (${fmtKm(crit.km_limite_desativacao)}).`;
+    return o;
+  }
+  const plano = crit.plano_km;
+  if (v.km_atual != null) { o.pKm = Math.max(0, (v.km_atual - (o.meta - plano)) / plano); o.kmRest = o.meta - v.km_atual; }
+  if (o.idade != null) { o.pTempo = o.idade / tmax; o.tempoRest = tmax - o.idade; }
+  o.urg = Math.max(o.pKm ?? 0, o.pTempo ?? 0);
+
+  const porKm = (o.pKm ?? 0) >= (o.pTempo ?? 0);
+  if (o.urg >= 1) {
+    o.status = ST.CRITICO;
+    o.motivo = porKm ? `Revisão de ${fmtKm(o.meta)} km vencida: o veículo já está em ${fmtKm(v.km_atual)} km.` : 'Tempo ativo no limite máximo permitido.';
+  } else if (o.urg >= LIMIAR_ATENCAO) {
+    o.status = ST.ATENCAO;
+    o.motivo = porKm ? `Faltam ${fmtKm(o.kmRest)} km para a revisão de ${fmtKm(o.meta)} km.` : `Faltam ${fmtAnos(o.tempoRest)} para o limite de tempo ativo.`;
+  } else {
+    o.status = ST.OK; o.motivo = 'Dentro dos parâmetros.';
+  }
+  return o;
+}
+
+/* ---------------------------------------------------------------------
+   4. Armazenamento: Google Sheets (Apps Script) ou modo local
+   --------------------------------------------------------------------- */
+function apiUrl() {
+  const salvo = localStorage.getItem('frota_api_url');
+  return salvo !== null ? salvo : (CONFIG.API_URL || '');
+}
+const apiToken = () => localStorage.getItem('frota_token') || '';
+
+async function remoteCall(action, payload) {
+  let res;
+  try {
+    // Sem cabeçalhos customizados: evita a requisição "preflight" que o Apps Script não responde.
+    res = await fetch(apiUrl(), { method: 'POST', redirect: 'follow', body: JSON.stringify({ action, token: apiToken(), ...payload }) });
+  } catch (e) {
+    throw new Error('Não foi possível conectar ao Apps Script. Confira a URL e se o acesso está como "Qualquer pessoa".');
+  }
+  if (!res.ok) throw new Error(`Falha na comunicação (${res.status}).`);
+  let data;
+  try { data = await res.json(); }
+  catch (e) { throw new Error('Resposta inesperada do Apps Script. Confira se a URL termina em /exec e se a implantação está atualizada.'); }
+  if (!data.ok) throw new Error(data.error || 'Erro desconhecido na API.');
+  return data;
+}
+
+const Local = {
+  KEY: 'frota_local_db_v1',
+  load() { try { return JSON.parse(localStorage.getItem(this.KEY)) || { veiculos: [], criterios: [], revisoes: [] }; } catch (e) { return { veiculos: [], criterios: [], revisoes: [] }; } },
+  save(db) { localStorage.setItem(this.KEY, JSON.stringify(db)); },
+  async call(action, p) {
+    const db = this.load(); const agora = new Date().toISOString().slice(0, 19);
+    const falha = msg => { throw new Error(msg); };
+    switch (action) {
+      case 'getAll': return { ok: true, veiculos: db.veiculos, criterios: db.criterios, revisoes: db.revisoes };
+      case 'importVeiculos': {
+        const por = new Map(db.veiculos.map(v => [v.numero_ordem, v])); let ins = 0, atu = 0, leit = 0;
+        for (const inc of p.veiculos || []) {
+          const ordem = String(inc.numero_ordem || '').trim().toUpperCase(); if (!ordem) continue;
+          let v = por.get(ordem);
+          if (!v) { v = { numero_ordem: ordem, tipo_chassi_raw: '', tipo_chassi_key: '', tipo_chassi_label: '', ano_chassis: null, local: '', km_atual: null, data_leitura_km: '', proxima_meta_km: null, desativado_manual: 0, criado_em: agora }; por.set(ordem, v); db.veiculos.push(v); ins++; } else atu++;
+          for (const c of ['tipo_chassi_raw', 'tipo_chassi_key', 'tipo_chassi_label', 'ano_chassis', 'local', 'km_atual', 'data_leitura_km']) if (inc[c] !== undefined && inc[c] !== null && inc[c] !== '') v[c] = inc[c];
+          if (inc.km_atual != null) leit++;
+          v.atualizado_em = agora;
+        }
+        this.save(db); return { ok: true, inseridos: ins, atualizados: atu, leituras: leit };
+      }
+      case 'saveCriterio': {
+        const plano = Number(p.plano_km), meses = Number(p.tempo_ativo_meses);
+        if (!p.tipo_chassi_key) falha('Informe o tipo de chassi.');
+        if (!(plano > 0)) falha('O plano de KM deve ser maior que zero.');
+        if (!(meses > 0)) falha('O tempo ativo máximo deve ser maior que zero.');
+        const obj = { tipo_chassi_key: p.tipo_chassi_key, tipo_chassi_label: p.tipo_chassi_label || p.tipo_chassi_key, plano_km: plano, tempo_ativo_meses: Math.round(meses), km_limite_desativacao: p.km_limite_desativacao ? Number(p.km_limite_desativacao) : null, atualizado_em: agora };
+        const i = db.criterios.findIndex(c => c.tipo_chassi_key === obj.tipo_chassi_key);
+        if (i >= 0) db.criterios[i] = { ...db.criterios[i], ...obj }; else db.criterios.push({ ...obj, criado_em: agora });
+        this.save(db); return { ok: true };
+      }
+      case 'deleteCriterio': db.criterios = db.criterios.filter(c => c.tipo_chassi_key !== p.tipo_chassi_key); this.save(db); return { ok: true };
+      case 'registrarRevisao': {
+        const ordem = String(p.numero_ordem || '').toUpperCase(), resp = String(p.responsavel || '').trim(), nf = String(p.numero_nf || '').trim(), data = String(p.data_revisao || '');
+        if (resp.split(/\s+/).length < 2) falha('Informe o nome completo do responsável.');
+        if (!nf) falha('Informe o número da nota fiscal.');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) falha('Data da revisão inválida.');
+        const v = db.veiculos.find(x => x.numero_ordem === ordem); if (!v) falha('Veículo não encontrado: ' + ordem);
+        const crit = db.criterios.find(c => c.tipo_chassi_key === v.tipo_chassi_key); if (!crit) falha('Este tipo de chassi não tem critério cadastrado.');
+        const meta = v.proxima_meta_km || metaInicial(v.km_atual, crit.plano_km);
+        if (p.meta_km != null && Math.abs(Number(p.meta_km) - meta) > 0.5) falha(`A meta de revisão deste veículo mudou (agora é ${meta} km). Atualize os dados e tente de novo.`);
+        const nova = proximaMeta(meta, crit.plano_km);
+        db.revisoes.push({ id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), numero_ordem: ordem, tipo_chassi_label: v.tipo_chassi_label, meta_km: meta, km_no_momento: v.km_atual, responsavel: resp, numero_nf: nf, data_revisao: data, criado_em: agora });
+        v.proxima_meta_km = nova; v.atualizado_em = agora; this.save(db);
+        return { ok: true, meta_revisada: meta, proxima_meta_km: nova };
+      }
+      case 'setDesativado': {
+        const v = db.veiculos.find(x => x.numero_ordem === String(p.numero_ordem || '').toUpperCase()); if (!v) falha('Veículo não encontrado.');
+        v.desativado_manual = p.desativado ? 1 : 0; this.save(db); return { ok: true };
+      }
+    }
+    falha('Ação desconhecida: ' + action);
+  }
+};
+
+const api = (action, payload = {}) => apiUrl() ? remoteCall(action, payload) : Local.call(action, payload);
+
+/* ---------------------------------------------------------------------
+   5. Estado e carregamento
+   --------------------------------------------------------------------- */
+const S = { veiculos: [], criterios: [], revisoes: [], rows: [], local: 'Todos', loaded: false };
+const SORT = {};
+let _loadN = 0;
+function loading(d) { _loadN = Math.max(0, _loadN + d); $('#loading').classList.toggle('on', _loadN > 0); }
+
+function toast(msg, tipo) {
+  const t = document.createElement('div'); t.className = 'toast' + (tipo === 'err' ? ' err' : ''); t.textContent = msg;
+  $('#toasts').appendChild(t); setTimeout(() => t.remove(), tipo === 'err' ? 8000 : 4500);
+}
+
+const num = v => (v === '' || v == null || isNaN(Number(v))) ? null : Number(v);
+const normV = v => ({ ...v, ano_chassis: num(v.ano_chassis), km_atual: num(v.km_atual), proxima_meta_km: num(v.proxima_meta_km), desativado_manual: Number(v.desativado_manual) || 0, data_leitura_km: v.data_leitura_km || '' });
+const normC = c => ({ ...c, plano_km: num(c.plano_km), tempo_ativo_meses: num(c.tempo_ativo_meses), km_limite_desativacao: num(c.km_limite_desativacao) });
+const normR = r => ({ ...r, meta_km: num(r.meta_km), km_no_momento: num(r.km_no_momento) });
+
+async function refresh() {
+  loading(1);
+  try {
+    const d = await api('getAll');
+    S.veiculos = (d.veiculos || []).map(normV);
+    S.criterios = (d.criterios || []).map(normC);
+    S.revisoes = (d.revisoes || []).map(normR);
+    S.loaded = true;
+  } catch (e) { toast(e.message, 'err'); }
+  finally { loading(-1); }
+  derive(); renderAll();
+}
+
+function derive() {
+  const crit = new Map(S.criterios.map(c => [c.tipo_chassi_key, c]));
+  const cont = new Map();
+  S.revisoes.forEach(r => cont.set(r.numero_ordem, (cont.get(r.numero_ordem) || 0) + 1));
+  const hoje = new Date();
+  S.rows = S.veiculos.map(v => {
+    const c = crit.get(v.tipo_chassi_key) || null;
+    return { ...v, crit: c, ...avaliar(v, c, hoje), nRev: cont.get(v.numero_ordem) || 0 };
+  });
+}
+
+const porLocal = r => S.local === 'Todos' || r.local === S.local;
+const rowByOrdem = o => S.rows.find(r => r.numero_ordem === o);
+
+/* Tipos de chassi (famílias) presentes no cadastro */
+function tiposChassi() {
+  const g = new Map();
+  S.veiculos.forEach(v => {
+    if (!v.tipo_chassi_key) return;
+    if (!g.has(v.tipo_chassi_key)) g.set(v.tipo_chassi_key, { key: v.tipo_chassi_key, count: 0, labels: new Map(), variants: new Set() });
+    const t = g.get(v.tipo_chassi_key); t.count++; t.variants.add(v.tipo_chassi_raw);
+    t.labels.set(v.tipo_chassi_label, (t.labels.get(v.tipo_chassi_label) || 0) + 1);
+  });
+  return Array.from(g.values()).map(t => ({ key: t.key, count: t.count, variants: Array.from(t.variants).sort(), label: Array.from(t.labels.entries()).sort((a, b) => b[1] - a[1])[0][0] })).sort((a, b) => a.label.localeCompare(b.label, 'pt-BR', { numeric: true }));
+}
+
+/* ---------------------------------------------------------------------
+   6. Componentes de interface
+   --------------------------------------------------------------------- */
+const badge = st => `<span class="badge ${ST_CLS[st] || 'off'}">${esc(st)}</span>`;
+
+function ruler(r) {
+  if (!r.crit || r.urg == null || isOff(r.status)) return '—';
+  const cls = r.status === ST.CRITICO ? 'c-crit' : r.status === ST.ATENCAO ? 'c-warn' : 'c-ok';
+  const w = Math.min(r.urg, 1.5) / 1.5 * 100;
+  return `<div class="ruler-cell"><div class="ruler ${cls}" title="Ciclo consumido: ${fmtPct(r.urg)}"><i style="width:${w.toFixed(1)}%"></i></div><span>${fmtPct(r.urg)}</span></div>`;
+}
+
+const kmRestCell = r => r.kmRest == null ? '—' : (r.kmRest < 0 ? `<span class="neg">−${fmtKm(-r.kmRest)}</span>` : fmtKm(r.kmRest));
+
+/* Tabela ordenável. cols: {key,label,num,sort(row),cell(row)} */
+function table(id, cols, rows, opts = {}) {
+  const c = document.getElementById(id);
+  const st = SORT[id] || (SORT[id] = { key: opts.sortKey || null, dir: opts.sortDir || 'desc' });
+  if (!rows.length) { c.innerHTML = `<div class="empty">${opts.empty || '<strong>Nada para mostrar</strong>'}</div>`; return; }
+  const data = rows.slice();
+  const col = cols.find(x => x.key === st.key);
+  if (col && col.sort) {
+    data.sort((a, b) => {
+      const x = col.sort(a), y = col.sort(b);
+      if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+      const r = typeof x === 'string' ? x.localeCompare(y, 'pt-BR', { numeric: true }) : x - y;
+      return st.dir === 'asc' ? r : -r;
+    });
+  }
+  const ths = cols.map(k => {
+    const s = k.sort ? ` data-k="${k.key}"` : '';
+    const a = k.sort && st.key === k.key ? ` aria-sort="${st.dir === 'asc' ? 'ascending' : 'descending'}"` : '';
+    return `<th${s}${a} class="${k.num ? 'num' : ''}">${esc(k.label)}</th>`;
+  }).join('');
+  const trs = data.map(r => `<tr>${cols.map(k => `<td class="${k.num ? 'num' : ''} ${k.cls || ''}">${k.cell(r)}</td>`).join('')}</tr>`).join('');
+  c.innerHTML = `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+  $$('th[data-k]', c).forEach(th => th.addEventListener('click', () => {
+    const k = th.dataset.k;
+    if (st.key === k) st.dir = st.dir === 'asc' ? 'desc' : 'asc'; else { st.key = k; st.dir = cols.find(x => x.key === k).num ? 'desc' : 'asc'; }
+    table(id, cols, rows, opts);
+  }));
+}
+
+function baixarCSV(nome, cols, rows) {
+  const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const linhas = [cols.map(c => q(c.label)).join(';')].concat(rows.map(r => cols.map(c => q(c.csv(r))).join(';')));
+  const blob = new Blob(['\uFEFF' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+const modal = $('#modal');
+function openModal(titulo, corpo, rodape) {
+  modal.innerHTML = `<div class="m-head"><h3 id="m-title">${esc(titulo)}</h3><button class="m-x" type="button" data-act="close-modal" aria-label="Fechar">&times;</button></div><form id="m-form" novalidate><div class="m-body">${corpo}</div><div class="m-foot">${rodape}</div></form>`;
+  if (typeof modal.showModal === 'function') { if (!modal.open) modal.showModal(); } else modal.setAttribute('open', '');
+}
+function closeModal() { if (typeof modal.close === 'function') modal.close(); else modal.removeAttribute('open'); }
+
+/* ---------------------------------------------------------------------
+   7. Renderização das seções
+   --------------------------------------------------------------------- */
+function renderAll() { fillFilters(); renderConn(); renderDashboard(); renderRanking(); renderCriterios(); renderVeiculos(); renderHistorico(); }
+
+function fillFilters() {
+  const locais = Array.from(new Set(S.veiculos.map(v => v.local).filter(Boolean))).sort();
+  if (S.local !== 'Todos' && !locais.includes(S.local)) S.local = 'Todos';
+  $$('.sel-local').forEach(s => { s.innerHTML = ['Todos', ...locais].map(l => `<option value="${esc(l)}"${l === S.local ? ' selected' : ''}>${esc(l === 'Todos' ? 'Todos os locais' : l)}</option>`).join(''); });
+  const fs = $('#f-status'), vs = fs.value || 'Todos';
+  const stats = Array.from(new Set(S.rows.map(r => r.status))).sort();
+  fs.innerHTML = ['Todos', '__OFF__', ...stats].map(s => `<option value="${esc(s)}">${s === 'Todos' ? 'Todos' : s === '__OFF__' ? 'Todos os desativados' : esc(s)}</option>`).join('');
+  fs.value = [...fs.options].some(o => o.value === vs) ? vs : 'Todos';
+  const fc = $('#f-chassi'), vc = fc.value || 'Todos';
+  fc.innerHTML = '<option value="Todos">Todos</option>' + tiposChassi().map(t => `<option value="${esc(t.key)}">${esc(t.label)}</option>`).join('');
+  fc.value = [...fc.options].some(o => o.value === vc) ? vc : 'Todos';
+}
+
+function renderConn() {
+  const remoto = !!apiUrl();
+  $('#conn-dot').className = 'dot ' + (remoto ? 'on' : 'local');
+  $('#conn-text').textContent = remoto ? 'Conectado ao Google Sheets' : 'Modo local: dados só neste navegador';
+  $('#cfg-url').value = apiUrl(); $('#cfg-token').value = apiToken();
+  $('#cfg-status').innerHTML = remoto ? 'Os dados são lidos e gravados na sua planilha do Google, e ficam disponíveis para toda a equipe.' : '<b>Modo local.</b> Os dados ficam apenas neste navegador. Para compartilhar com a equipe, conecte ao Google Sheets.';
+  $('#local-panel').hidden = remoto;
+}
+
+function renderDashboard() {
+  const all = S.rows, rows = all.filter(porLocal);
+  const notices = [];
+  if (!apiUrl()) notices.push(`<div class="notice info"><span>Você está no modo local: os dados ficam só neste navegador.</span><button class="btn sm" data-act="goto" data-id="config">Conectar ao Google Sheets</button></div>`);
+  if (!all.length) {
+    $('#dash-notices').innerHTML = notices.join('');
+    $('#dash-fleet').innerHTML = `<div class="empty"><strong>Nenhum veículo cadastrado</strong>Importe o cadastro de veículos e o relatório de abastecimento para começar.<div style="margin-top:14px"><button class="btn primary" data-act="goto" data-id="config">Importar arquivos</button></div></div>`;
+    $('#tbl-dash-top').innerHTML = ''; $('#tbl-dash-local').innerHTML = ''; return;
+  }
+  if (!S.criterios.length) notices.push(`<div class="notice warn"><span>Nenhum critério cadastrado. Sem critério, os veículos ficam como SEM CRITÉRIO e não entram no ranking.</span><button class="btn sm" data-act="goto" data-id="criterios">Cadastrar critérios</button></div>`);
+  $('#dash-notices').innerHTML = notices.join('');
+
+  const cnt = f => rows.filter(f).length;
+  const grupos = [
+    { id: ST.OK, nome: 'Em dia', cls: 'c-ok', n: cnt(r => r.status === ST.OK) },
+    { id: ST.ATENCAO, nome: 'Em atenção', cls: 'c-warn', n: cnt(r => r.status === ST.ATENCAO) },
+    { id: ST.CRITICO, nome: 'Críticos', cls: 'c-crit', n: cnt(r => r.status === ST.CRITICO) },
+    { id: ST.SEM, nome: 'Sem critério', cls: 'c-none', n: cnt(r => r.status === ST.SEM) },
+    { id: '__OFF__', nome: 'Desativados', cls: 'c-off', n: cnt(r => isOff(r.status)) }
+  ];
+  const total = rows.length, off = grupos[4].n, alerta = grupos[1].n + grupos[2].n;
+  $('#dash-fleet').innerHTML = `<div class="fleet">
+    <p class="fleet-sum"><b>${nf.format(total)}</b> veículos${S.local !== 'Todos' ? ' em ' + esc(S.local) : ''}: <b>${nf.format(total - off)}</b> em operação (<b>${nf.format(alerta)}</b> em alerta) e <b>${nf.format(off)}</b> desativados.</p>
+    <div class="bar" role="img" aria-label="Distribuição da frota por status">${grupos.filter(g => g.n).map(g => `<i class="${g.cls}" style="flex:${g.n}" title="${g.nome}: ${g.n}"></i>`).join('')}</div>
+    <div class="legend">${grupos.map(g => `<button class="lg ${g.cls}" data-act="filtrar-status" data-id="${esc(g.id)}"><b>${nf.format(g.n)}</b><span>${g.nome}${total ? ' (' + Math.round(g.n / total * 100) + '%)' : ''}</span></button>`).join('')}</div>
+  </div>`;
+
+  const top = rows.filter(r => r.status === ST.CRITICO || r.status === ST.ATENCAO).sort((a, b) => b.urg - a.urg).slice(0, 10);
+  table('tbl-dash-top', [
+    { key: 'st', label: 'Status', cell: r => badge(r.status) },
+    { key: 'o', label: 'Nº ordem', cell: r => `<b>${esc(r.numero_ordem)}</b>` },
+    { key: 'c', label: 'Chassi', cell: r => esc(r.tipo_chassi_label) },
+    { key: 'l', label: 'Local', cell: r => esc(r.local) },
+    { key: 'k', label: 'KM atual', num: true, cell: r => fmtKm(r.km_atual) },
+    { key: 'm', label: 'Meta', num: true, cell: r => fmtKm(r.meta) },
+    { key: 'u', label: 'Ciclo consumido', cell: ruler },
+    { key: 'a', label: '', cell: r => `<button class="btn sm primary" data-act="revisao" data-id="${esc(r.numero_ordem)}">Confirmar revisão</button>` }
+  ], top, { empty: '<strong>Nenhum veículo em atenção ou crítico</strong>Tudo dentro do plano neste filtro.' });
+
+  const locs = Array.from(new Set(all.map(r => r.local))).sort().map(l => {
+    const x = all.filter(r => r.local === l);
+    return { local: l || '(sem local)', total: x.length, ok: x.filter(r => r.status === ST.OK).length, at: x.filter(r => r.status === ST.ATENCAO).length, cr: x.filter(r => r.status === ST.CRITICO).length, sem: x.filter(r => r.status === ST.SEM).length, off: x.filter(r => isOff(r.status)).length };
+  });
+  table('tbl-dash-local', [
+    { key: 'local', label: 'Local', sort: r => r.local, cell: r => `<b>${esc(r.local)}</b>` },
+    { key: 'total', label: 'Total', num: true, sort: r => r.total, cell: r => nf.format(r.total) },
+    { key: 'ok', label: 'Em dia', num: true, sort: r => r.ok, cell: r => nf.format(r.ok) },
+    { key: 'at', label: 'Atenção', num: true, sort: r => r.at, cell: r => nf.format(r.at) },
+    { key: 'cr', label: 'Críticos', num: true, sort: r => r.cr, cell: r => r.cr ? `<span class="neg">${nf.format(r.cr)}</span>` : '0' },
+    { key: 'sem', label: 'Sem critério', num: true, sort: r => r.sem, cell: r => nf.format(r.sem) },
+    { key: 'off', label: 'Desativados', num: true, sort: r => r.off, cell: r => nf.format(r.off) }
+  ], locs, { sortKey: 'total' });
+}
+
+function listaRanking() {
+  const lista = S.rows.filter(r => r.crit && !isOff(r.status) && r.urg != null && porLocal(r))
+    .sort((a, b) => (b.urg - a.urg) || ((a.kmRest ?? 1e12) - (b.kmRest ?? 1e12)));
+  lista.forEach((r, i) => r.rank = i + 1);
+  return lista;
+}
+
+function renderRanking() {
+  const lista = listaRanking();
+  const semCrit = S.rows.filter(r => !r.crit && !isOff(r.status) && porLocal(r)).length;
+  const nCrit = lista.filter(r => r.status === ST.CRITICO).length, nAt = lista.filter(r => r.status === ST.ATENCAO).length;
+  $('#rk-caption').textContent = lista.length ? `${lista.length} veículos no ranking: ${nCrit} críticos e ${nAt} em atenção.` : '';
+  $('#rk-notices').innerHTML = semCrit ? `<div class="notice info"><span>${semCrit} veículo(s) deste filtro não aparecem aqui porque o tipo de chassi ainda não tem critério.</span><button class="btn sm" data-act="goto" data-id="criterios">Cadastrar critérios</button></div>` : '';
+  table('tbl-ranking', [
+    { key: 'rank', label: '#', num: true, sort: r => r.rank, cell: r => r.rank },
+    { key: 'st', label: 'Status', sort: r => r.urg, cell: r => badge(r.status) },
+    { key: 'o', label: 'Nº ordem', sort: r => r.numero_ordem, cell: r => `<b>${esc(r.numero_ordem)}</b>` },
+    { key: 'c', label: 'Chassi', sort: r => r.tipo_chassi_label, cell: r => esc(r.tipo_chassi_label) },
+    { key: 'l', label: 'Local', sort: r => r.local, cell: r => esc(r.local) },
+    { key: 'k', label: 'KM atual', num: true, sort: r => r.km_atual, cell: r => fmtKm(r.km_atual) },
+    { key: 'm', label: 'Meta de revisão', num: true, sort: r => r.meta, cell: r => fmtKm(r.meta) },
+    { key: 'f', label: 'KM restante', num: true, sort: r => r.kmRest, cell: kmRestCell },
+    { key: 'u', label: 'Ciclo consumido', sort: r => r.urg, cell: ruler },
+    { key: 't', label: 'Tempo restante', num: true, sort: r => r.tempoRest, cell: r => r.tempoRest == null ? '—' : fmtAnos(r.tempoRest) },
+    { key: 'a', label: '', cell: r => `<button class="btn sm primary" data-act="revisao" data-id="${esc(r.numero_ordem)}">Confirmar revisão</button>` }
+  ], lista, { sortKey: 'rank', sortDir: 'asc', empty: '<strong>Ranking vazio</strong>Cadastre critérios para os tipos de chassi e importe os veículos.' });
+}
+
+function renderCriterios() {
+  const tipos = tiposChassi(), mapT = new Map(tipos.map(t => [t.key, t]));
+  table('tbl-criterios', [
+    { key: 'c', label: 'Tipo de chassi', sort: c => c.tipo_chassi_label, cell: c => `<b>${esc(c.tipo_chassi_label)}</b>` },
+    { key: 'var', label: 'Variações agrupadas no cadastro', cls: 'wrap', cell: c => { const t = mapT.get(c.tipo_chassi_key); return t ? esc(t.variants.join(', ')) : '—'; } },
+    { key: 'n', label: 'Veículos', num: true, sort: c => (mapT.get(c.tipo_chassi_key) || { count: 0 }).count, cell: c => nf.format((mapT.get(c.tipo_chassi_key) || { count: 0 }).count) },
+    { key: 'p', label: 'Plano de KM', num: true, sort: c => c.plano_km, cell: c => fmtKm(c.plano_km) },
+    { key: 't', label: 'Tempo ativo máximo', num: true, sort: c => c.tempo_ativo_meses, cell: c => `${Math.floor(c.tempo_ativo_meses / 12)} anos${c.tempo_ativo_meses % 12 ? ' e ' + (c.tempo_ativo_meses % 12) + ' meses' : ''}` },
+    { key: 'l', label: 'KM limite de desativação', num: true, sort: c => c.km_limite_desativacao, cell: c => fmtKm(c.km_limite_desativacao) },
+    { key: 'a', label: '', cell: c => `<button class="btn sm" data-act="editar-criterio" data-id="${esc(c.tipo_chassi_key)}">Editar</button> <button class="btn sm danger" data-act="excluir-criterio" data-id="${esc(c.tipo_chassi_key)}">Excluir</button>` }
+  ], S.criterios, { sortKey: 'c', sortDir: 'asc', empty: '<strong>Nenhum critério cadastrado</strong>Use "Adicionar novo critério" para definir o plano de KM e o tempo ativo máximo de um tipo de chassi.' });
+
+  const cobertos = new Set(S.criterios.map(c => c.tipo_chassi_key));
+  table('tbl-sem-criterio', [
+    { key: 'c', label: 'Tipo de chassi', sort: t => t.label, cell: t => `<b>${esc(t.label)}</b>` },
+    { key: 'var', label: 'Variações no cadastro', cls: 'wrap', cell: t => esc(t.variants.join(', ')) },
+    { key: 'n', label: 'Veículos', num: true, sort: t => t.count, cell: t => nf.format(t.count) },
+    { key: 'a', label: '', cell: t => `<button class="btn sm primary" data-act="novo-criterio" data-id="${esc(t.key)}">Definir critério</button>` }
+  ], tipos.filter(t => !cobertos.has(t.key)), { sortKey: 'n', empty: '<strong>Todos os tipos de chassi têm critério</strong>' });
+}
+
+function filtrarVeiculos() {
+  const st = $('#f-status').value, ch = $('#f-chassi').value, q = semAcento($('#f-busca').value).toUpperCase().trim();
+  return S.rows.filter(r => porLocal(r)
+    && (st === 'Todos' || (st === '__OFF__' ? isOff(r.status) : r.status === st))
+    && (ch === 'Todos' || r.tipo_chassi_key === ch)
+    && (!q || semAcento(r.numero_ordem + ' ' + r.tipo_chassi_raw + ' ' + r.tipo_chassi_label).toUpperCase().includes(q)));
+}
+
+function renderVeiculos() {
+  const lista = filtrarVeiculos();
+  $('#v-caption').textContent = `${nf.format(lista.length)} de ${nf.format(S.rows.length)} veículos.`;
+  table('tbl-veiculos', [
+    { key: 'st', label: 'Status', sort: r => r.status, cell: r => badge(r.status) },
+    { key: 'o', label: 'Nº ordem', sort: r => r.numero_ordem, cell: r => `<b>${esc(r.numero_ordem)}</b>` },
+    { key: 'c', label: 'Chassi', sort: r => r.tipo_chassi_label, cell: r => esc(r.tipo_chassi_label) },
+    { key: 'y', label: 'Ano', num: true, sort: r => r.ano_chassis, cell: r => r.ano_chassis || '—' },
+    { key: 'i', label: 'Idade', num: true, sort: r => r.idade, cell: r => fmtAnos(r.idade) },
+    { key: 'l', label: 'Local', sort: r => r.local, cell: r => esc(r.local) },
+    { key: 'k', label: 'KM atual', num: true, sort: r => r.km_atual, cell: r => fmtKm(r.km_atual) },
+    { key: 'd', label: 'Leitura em', sort: r => r.data_leitura_km, cell: r => fmtData(r.data_leitura_km) },
+    { key: 'm', label: 'Meta', num: true, sort: r => r.meta, cell: r => fmtKm(r.meta) },
+    { key: 'u', label: 'Ciclo consumido', sort: r => r.urg, cell: ruler },
+    { key: 'n', label: 'Revisões', num: true, sort: r => r.nRev, cell: r => r.nRev },
+    { key: 'a', label: '', cell: r => `<button class="btn sm" data-act="detalhe" data-id="${esc(r.numero_ordem)}">Detalhes</button>` }
+  ], lista, { sortKey: 'o', sortDir: 'asc', empty: '<strong>Nenhum veículo encontrado</strong>Ajuste os filtros ou importe o cadastro.' });
+}
+
+function filtrarHistorico() {
+  const q = semAcento($('#h-busca').value).toUpperCase().trim();
+  return S.revisoes.filter(r => !q || semAcento([r.numero_ordem, r.responsavel, r.numero_nf, r.tipo_chassi_label].join(' ')).toUpperCase().includes(q));
+}
+const COLS_HIST = [
+  { key: 'd', label: 'Data da revisão', sort: r => r.data_revisao, cell: r => fmtData(r.data_revisao), csv: r => fmtData(r.data_revisao) },
+  { key: 'o', label: 'Nº ordem', sort: r => r.numero_ordem, cell: r => `<b>${esc(r.numero_ordem)}</b>`, csv: r => r.numero_ordem },
+  { key: 'c', label: 'Chassi', sort: r => r.tipo_chassi_label, cell: r => esc(r.tipo_chassi_label), csv: r => r.tipo_chassi_label },
+  { key: 'm', label: 'Meta revisada (km)', num: true, sort: r => r.meta_km, cell: r => fmtKm(r.meta_km), csv: r => r.meta_km },
+  { key: 'k', label: 'KM no momento', num: true, sort: r => r.km_no_momento, cell: r => fmtKm(r.km_no_momento), csv: r => r.km_no_momento },
+  { key: 'r', label: 'Responsável', sort: r => r.responsavel, cell: r => esc(r.responsavel), csv: r => r.responsavel },
+  { key: 'n', label: 'Nota fiscal', sort: r => r.numero_nf, cell: r => esc(r.numero_nf), csv: r => r.numero_nf },
+  { key: 'e', label: 'Registrada em', sort: r => r.criado_em, cell: r => esc((r.criado_em || '').replace('T', ' ')), csv: r => r.criado_em }
+];
+function renderHistorico() {
+  table('tbl-historico', COLS_HIST, filtrarHistorico(), { sortKey: 'd', empty: '<strong>Nenhuma revisão registrada</strong>As revisões confirmadas no Ranking aparecem aqui.' });
+}
+
+/* ---------------------------------------------------------------------
+   8. Diálogos
+   --------------------------------------------------------------------- */
+function abrirCriterio(keyInicial) {
+  const tipos = tiposChassi();
+  if (!tipos.length) { toast('Importe o cadastro de veículos antes de criar critérios.', 'err'); showTab('config'); return; }
+  const cobertos = new Set(S.criterios.map(c => c.tipo_chassi_key));
+  const key0 = keyInicial || (tipos.find(t => !cobertos.has(t.key)) || tipos[0]).key;
+  openModal('Critério por tipo de chassi', `
+    <div class="field"><label for="cr-tipo">Tipo de chassi</label>
+      <select id="cr-tipo">${tipos.map(t => `<option value="${esc(t.key)}">${esc(t.label)} (${t.count} veículos)${cobertos.has(t.key) ? ' — já configurado' : ''}</option>`).join('')}</select>
+      <small id="cr-var"></small></div>
+    <div class="field"><label for="cr-plano">Plano de KM</label><input type="number" id="cr-plano" min="1000" step="1000" inputmode="numeric"><small>Intervalo entre revisões. Com 30.000: revisões em 30.000, 60.000, 90.000 km...</small></div>
+    <div class="row2">
+      <div class="field"><label for="cr-anos">Tempo ativo máximo (anos)</label><input type="number" id="cr-anos" min="0" step="1" inputmode="numeric"></div>
+      <div class="field"><label for="cr-meses">e meses</label><input type="number" id="cr-meses" min="0" max="11" step="1" inputmode="numeric"></div>
+    </div>
+    <div class="field"><label for="cr-lim">KM limite para desativar (opcional)</label><input type="number" id="cr-lim" min="0" step="1000" inputmode="numeric"><small>Deixe vazio para desativar apenas por tempo.</small></div>
+    <p class="err" id="cr-err" role="alert"></p>`,
+    `<button class="btn" type="button" data-act="close-modal">Cancelar</button><button class="btn primary" type="submit" id="cr-ok">Salvar critério</button>`);
+  const sel = $('#cr-tipo');
+  const preencher = () => {
+    const t = tipos.find(x => x.key === sel.value), c = S.criterios.find(x => x.tipo_chassi_key === sel.value);
+    $('#cr-plano').value = c ? c.plano_km : 30000;
+    $('#cr-anos').value = c ? Math.floor(c.tempo_ativo_meses / 12) : 10;
+    $('#cr-meses').value = c ? c.tempo_ativo_meses % 12 : 0;
+    $('#cr-lim').value = c && c.km_limite_desativacao ? c.km_limite_desativacao : '';
+    $('#cr-var').textContent = t.variants.length > 1 ? 'Agrupa as variações: ' + t.variants.join(', ') : '';
+    $('#cr-ok').textContent = c ? 'Atualizar critério' : 'Salvar critério';
+  };
+  sel.value = key0; preencher(); sel.addEventListener('change', preencher);
+  $('#m-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const t = tipos.find(x => x.key === sel.value);
+    const meses = (parseInt($('#cr-anos').value, 10) || 0) * 12 + (parseInt($('#cr-meses').value, 10) || 0);
+    const plano = Number($('#cr-plano').value);
+    if (!(plano > 0)) { $('#cr-err').textContent = 'Informe o plano de KM (maior que zero).'; return; }
+    if (!(meses > 0)) { $('#cr-err').textContent = 'Informe um tempo ativo máximo maior que zero.'; return; }
+    const btn = $('#cr-ok'); btn.disabled = true; btn.textContent = 'Salvando…';
+    try {
+      await api('saveCriterio', { tipo_chassi_key: t.key, tipo_chassi_label: t.label, plano_km: plano, tempo_ativo_meses: meses, km_limite_desativacao: Number($('#cr-lim').value) || null });
+      closeModal(); toast(`Critério de ${t.label} salvo.`); await refresh();
+    } catch (err) { $('#cr-err').textContent = err.message; btn.disabled = false; btn.textContent = 'Salvar critério'; }
+  });
+}
+
+function abrirRevisao(ordem) {
+  const r = rowByOrdem(ordem);
+  if (!r || !r.crit) { toast('Este veículo não tem critério cadastrado.', 'err'); return; }
+  if (isOff(r.status)) { toast('Veículo desativado: não é possível confirmar revisão.', 'err'); return; }
+  const nova = proximaMeta(r.meta, r.crit.plano_km);
+  openModal('Confirmar revisão', `
+    <dl class="facts">
+      <dt>Veículo</dt><dd>${esc(r.numero_ordem)} — ${esc(r.tipo_chassi_label)}</dd>
+      <dt>Local</dt><dd>${esc(r.local || '—')}</dd>
+      <dt>KM atual</dt><dd>${fmtKm(r.km_atual)}</dd>
+      <dt>Revisão a confirmar</dt><dd>${fmtKm(r.meta)} km</dd>
+      <dt>Próxima meta</dt><dd>${fmtKm(nova)} km</dd>
+    </dl>
+    <div class="field"><label for="rv-nome">Nome completo do responsável</label><input type="text" id="rv-nome" autocomplete="name" required></div>
+    <div class="field"><label for="rv-nf">Número da nota fiscal (NF)</label><input type="text" id="rv-nf" required></div>
+    <div class="field"><label for="rv-data">Data da revisão</label><input type="date" id="rv-data" required></div>
+    <p class="err" id="rv-err" role="alert"></p>`,
+    `<button class="btn" type="button" data-act="close-modal">Cancelar</button><button class="btn primary" type="submit" id="rv-ok">Confirmar revisão</button>`);
+  $('#rv-data').value = hojeISO(); $('#rv-nome').focus();
+  $('#m-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const nome = $('#rv-nome').value.trim().replace(/\s+/g, ' '), nf_ = $('#rv-nf').value.trim(), data = $('#rv-data').value;
+    if (nome.split(' ').length < 2) { $('#rv-err').textContent = 'Informe o nome completo (nome e sobrenome).'; $('#rv-nome').focus(); return; }
+    if (!nf_) { $('#rv-err').textContent = 'Informe o número da nota fiscal.'; $('#rv-nf').focus(); return; }
+    if (!data) { $('#rv-err').textContent = 'Informe a data da revisão.'; return; }
+    const btn = $('#rv-ok'); btn.disabled = true; btn.textContent = 'Salvando…';
+    try {
+      const res = await api('registrarRevisao', { numero_ordem: r.numero_ordem, meta_km: r.meta, responsavel: nome, numero_nf: nf_, data_revisao: data });
+      closeModal(); toast(`Revisão de ${fmtKm(res.meta_revisada)} km confirmada. Próxima meta: ${fmtKm(res.proxima_meta_km)} km.`); await refresh();
+    } catch (err) { $('#rv-err').textContent = err.message; btn.disabled = false; btn.textContent = 'Confirmar revisão'; }
+  });
+}
+
+function abrirDetalhe(ordem) {
+  const r = rowByOrdem(ordem); if (!r) return;
+  const hist = S.revisoes.filter(x => x.numero_ordem === ordem).sort((a, b) => (b.data_revisao || '').localeCompare(a.data_revisao || ''));
+  const podeRev = r.crit && !isOff(r.status);
+  openModal(`Veículo ${r.numero_ordem}`, `
+    <div>${badge(r.status)} <span class="muted" style="margin-left:6px">${esc(r.motivo)}</span></div>
+    <dl class="facts">
+      <dt>Tipo de chassi</dt><dd>${esc(r.tipo_chassi_label)}${r.tipo_chassi_raw && r.tipo_chassi_raw.toUpperCase() !== r.tipo_chassi_label ? ` <span class="muted">(cadastro: ${esc(r.tipo_chassi_raw)})</span>` : ''}</dd>
+      <dt>Local</dt><dd>${esc(r.local || '—')}</dd>
+      <dt>Ano / idade</dt><dd>${r.ano_chassis || '—'} / ${fmtAnos(r.idade)}</dd>
+      <dt>KM atual</dt><dd>${fmtKm(r.km_atual)}${r.data_leitura_km ? ` <span class="muted">(leitura de ${fmtData(r.data_leitura_km)})</span>` : ''}</dd>
+      <dt>Meta de revisão</dt><dd>${r.crit ? fmtKm(r.meta) + ' km' : '—'}</dd>
+      <dt>Critério</dt><dd>${r.crit ? `plano de ${fmtKm(r.crit.plano_km)} km, ${Math.floor(r.crit.tempo_ativo_meses / 12)} anos${r.crit.tempo_ativo_meses % 12 ? ' e ' + r.crit.tempo_ativo_meses % 12 + ' meses' : ''} de tempo ativo` : 'não cadastrado'}</dd>
+    </dl>
+    <div><b>Revisões registradas (${hist.length})</b>
+      ${hist.length ? `<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>Data</th><th class="num">Meta (km)</th><th>Responsável</th><th>NF</th></tr></thead><tbody>${hist.map(h => `<tr><td>${fmtData(h.data_revisao)}</td><td class="num">${fmtKm(h.meta_km)}</td><td>${esc(h.responsavel)}</td><td>${esc(h.numero_nf)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:6px 0 0">Nenhuma revisão registrada ainda.</p>'}
+    </div>`,
+    `<button class="btn ${Number(r.desativado_manual) ? '' : 'danger'}" type="button" data-act="toggle-off" data-id="${esc(ordem)}">${Number(r.desativado_manual) ? 'Reativar veículo' : 'Desativar manualmente'}</button>
+     ${podeRev ? `<button class="btn primary" type="button" data-act="revisao" data-id="${esc(ordem)}">Confirmar revisão</button>` : ''}
+     <button class="btn" type="button" data-act="close-modal">Fechar</button>`);
+  $('#m-form').addEventListener('submit', e => e.preventDefault());
+}
+
+/* ---------------------------------------------------------------------
+   9. Importação de arquivos
+   --------------------------------------------------------------------- */
+const lerArquivo = f => new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = () => no(new Error('Não foi possível ler o arquivo.')); fr.readAsArrayBuffer(f); });
+
+/* Cruza cadastro x abastecimento e devolve o que enviar à API + estatísticas. */
+function prepararImportacao(cad, ab) {
+  const lk = ab ? montarLookup(ab.map) : null;
+  const base = cad || S.veiculos;
+  const payload = []; let comKm = 0;
+  for (const v of base) {
+    const l = lk ? acharKm(v.numero_ordem, lk) : null;
+    if (l && l.km_atual != null) comKm++;
+    if (cad) payload.push({ ...v, km_atual: l && l.km_atual != null ? l.km_atual : undefined, data_leitura_km: l && l.data_iso ? l.data_iso : undefined });
+    else if (l && l.km_atual != null) payload.push({ numero_ordem: v.numero_ordem, km_atual: l.km_atual, data_leitura_km: l.data_iso || undefined });
+  }
+  let semCadastro = [];
+  if (ab) {
+    const ordens = new Set(); base.forEach(v => { ordens.add(v.numero_ordem.toUpperCase()); ordens.add(semZeros(v.numero_ordem.toUpperCase())); });
+    semCadastro = Array.from(ab.map.keys()).filter(id => { const suf = id.split('/').pop().toUpperCase(); return !(ordens.has(suf) || ordens.has(semZeros(suf))); });
+  }
+  return { payload, comKm, semCadastro, totalBase: base.length };
+}
+
+async function importar() {
+  const fc = $('#imp-cad').files[0], fa = $('#imp-ab').files[0], out = $('#imp-result');
+  if (!fc && !fa) { toast('Escolha ao menos um arquivo.', 'err'); return; }
+  if (!fc && !S.veiculos.length) { toast('Importe primeiro o cadastro de veículos.', 'err'); return; }
+  loading(1);
+  try {
+    const cad = fc ? parseCadastro(decodeBuffer(await lerArquivo(fc))) : null;
+    const ab = fa ? parseAbastecimento(decodeBuffer(await lerArquivo(fa))) : null;
+    if (fc && !cad.length) throw new Error('Nenhum veículo encontrado no cadastro. Confira as colunas e o separador (;).');
+    if (fa && !ab.map.size) throw new Error('Nenhum veículo encontrado no relatório de abastecimento.');
+    const p = prepararImportacao(cad, ab);
+    if (!p.payload.length) throw new Error('Nada para salvar: nenhum veículo do relatório corresponde ao cadastro.');
+    const res = await api('importVeiculos', { veiculos: p.payload });
+    const linhas = [];
+    if (cad) linhas.push(`Cadastro: <b>${nf.format(cad.length)}</b> veículos (${nf.format(res.inseridos)} novos, ${nf.format(res.atualizados)} atualizados).`);
+    if (ab) {
+      linhas.push(`Abastecimento: <b>${nf.format(ab.map.size)}</b> veículos com leituras; KM atualizado em <b>${nf.format(p.comKm)}</b> de ${nf.format(p.totalBase)} do cadastro.`);
+      if (ab.descartadas) linhas.push(`${nf.format(ab.descartadas)} leituras de hodômetro descartadas por serem saltos fora do padrão.`);
+      if (p.semCadastro.length) linhas.push(`<details><summary>${p.semCadastro.length} veículo(s) do relatório não estão no cadastro</summary><p style="margin:8px 0 0">${p.semCadastro.map(esc).join(', ')}</p></details>`);
+    }
+    out.innerHTML = `<div class="notice ok" style="display:block">${linhas.map(l => `<div>${l}</div>`).join('')}</div>`;
+    toast('Importação concluída.');
+    $('#imp-cad').value = ''; $('#imp-ab').value = '';
+  } catch (e) { out.innerHTML = `<div class="notice warn" style="display:block">${esc(e.message)}</div>`; toast(e.message, 'err'); }
+  finally { loading(-1); }
+  await refresh();
+}
+
+/* ---------------------------------------------------------------------
+   10. Navegação e eventos
+   --------------------------------------------------------------------- */
+const TABS = ['dashboard', 'ranking', 'criterios', 'veiculos', 'historico', 'config'];
+function showTab(nome) {
+  if (!TABS.includes(nome)) nome = 'dashboard';
+  $$('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + nome));
+  $$('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === nome ? 'true' : 'false'));
+  if (location.hash !== '#' + nome) history.replaceState(null, '', '#' + nome);
+}
+
+const ACTS = {
+  'goto': id => showTab(id),
+  'close-modal': () => closeModal(),
+  'refresh': () => refresh(),
+  'revisao': id => { closeModal(); abrirRevisao(id); },
+  'detalhe': id => abrirDetalhe(id),
+  'novo-criterio': id => abrirCriterio(id || null),
+  'editar-criterio': id => abrirCriterio(id),
+  'excluir-criterio': async id => {
+    const c = S.criterios.find(x => x.tipo_chassi_key === id);
+    if (!c || !confirm(`Excluir o critério de ${c.tipo_chassi_label}? Os veículos desse tipo voltam a ficar SEM CRITÉRIO. O histórico de revisões é mantido.`)) return;
+    try { loading(1); await api('deleteCriterio', { tipo_chassi_key: id }); toast('Critério excluído.'); } catch (e) { toast(e.message, 'err'); } finally { loading(-1); }
+    await refresh();
+  },
+  'toggle-off': async id => {
+    const r = rowByOrdem(id); if (!r) return;
+    const desativar = !Number(r.desativado_manual);
+    try { loading(1); await api('setDesativado', { numero_ordem: id, desativado: desativar }); toast(desativar ? 'Veículo desativado.' : 'Veículo reativado.'); closeModal(); } catch (e) { toast(e.message, 'err'); } finally { loading(-1); }
+    await refresh();
+  },
+  'filtrar-status': id => { showTab('veiculos'); $('#f-status').value = id; $('#f-chassi').value = 'Todos'; $('#f-busca').value = ''; renderVeiculos(); },
+  'export-veiculos': () => baixarCSV('veiculos.csv', [
+    { label: 'Status', csv: r => r.status }, { label: 'Numero ordem', csv: r => r.numero_ordem }, { label: 'Tipo de chassi', csv: r => r.tipo_chassi_label },
+    { label: 'Ano', csv: r => r.ano_chassis }, { label: 'Local', csv: r => r.local }, { label: 'KM atual', csv: r => r.km_atual }, { label: 'Meta de revisao', csv: r => r.meta },
+    { label: 'Ciclo consumido', csv: r => r.urg == null ? '' : fmtPct(r.urg) }, { label: 'Revisoes', csv: r => r.nRev }
+  ], filtrarVeiculos()),
+  'export-historico': () => baixarCSV('historico_revisoes.csv', COLS_HIST, filtrarHistorico()),
+  'importar': () => importar(),
+  'cfg-salvar': async () => {
+    const url = $('#cfg-url').value.trim();
+    if (url && !/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) { toast('A URL deve começar com https://script.google.com/ e terminar em /exec.', 'err'); return; }
+    localStorage.setItem('frota_api_url', url); localStorage.setItem('frota_token', $('#cfg-token').value);
+    await refresh();
+    toast(url ? 'Conexão salva.' : 'Modo local ativado.');
+  },
+  'cfg-local': async () => { localStorage.setItem('frota_api_url', ''); await refresh(); toast('Modo local ativado.'); },
+  'local-backup': () => {
+    const blob = new Blob([JSON.stringify(Local.load(), null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'frota_backup.json'; document.body.appendChild(a); a.click(); a.remove();
+  },
+  'local-limpar': async () => { if (confirm('Apagar todos os dados salvos neste navegador? Esta ação não pode ser desfeita.')) { localStorage.removeItem(Local.KEY); await refresh(); toast('Dados locais apagados.'); } }
+};
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (t && ACTS[t.dataset.act]) { e.preventDefault(); ACTS[t.dataset.act](t.dataset.id, t); return; }
+  const tab = e.target.closest('[data-tab]'); if (tab) showTab(tab.dataset.tab);
+});
+document.addEventListener('change', e => {
+  if (e.target.matches('.sel-local')) { S.local = e.target.value; $$('.sel-local').forEach(s => { s.value = S.local; }); renderDashboard(); renderRanking(); renderVeiculos(); }
+  else if (e.target.matches('#f-status,#f-chassi')) renderVeiculos();
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'f-busca') renderVeiculos();
+  else if (e.target.id === 'h-busca') renderHistorico();
+});
+window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
+
+showTab(location.hash.slice(1));
+refresh();
+</script>
+</body>
+</html>
